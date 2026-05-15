@@ -1,0 +1,7 @@
+psycopg2-binary
+pika
+paramiko
+python-dotenv
+fastapi
+uvicorn
+schedule

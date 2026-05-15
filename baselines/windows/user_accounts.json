@@ -1,0 +1,7 @@
+{
+  "control": "Unauthorized Admin Users",
+  "expected": [
+    "BUILTIN\\Administrator"
+  ],
+  "severity": "HIGH"
+}

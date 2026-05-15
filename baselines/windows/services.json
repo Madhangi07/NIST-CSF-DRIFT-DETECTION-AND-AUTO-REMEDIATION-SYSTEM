@@ -1,0 +1,7 @@
+{
+  "control": "Critical Services",
+  "expected": {
+    "BITS": "RUNNING"
+  },
+  "severity": "CRITICAL"
+}

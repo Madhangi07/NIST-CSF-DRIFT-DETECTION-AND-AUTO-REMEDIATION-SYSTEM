@@ -1,0 +1,9 @@
+{
+  "control": "Windows Firewall",
+  "expected": {
+    "Domain": true,
+    "Private": true,
+    "Public": true
+  },
+  "severity": "HIGH"
+}

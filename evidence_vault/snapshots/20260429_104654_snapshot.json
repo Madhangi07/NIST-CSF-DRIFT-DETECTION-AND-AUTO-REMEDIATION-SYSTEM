@@ -1,0 +1,17 @@
+{
+    "timestamp": "20260429_104654",
+    "password_policy": {
+        "max_age_days": 90,
+        "min_length": 12
+    },
+    "firewall": {
+        "Domain": false,
+        "Private": false,
+        "Public": false
+    },
+    "users": [
+        "LAPTOP-R101UCM0\\Administrator",
+        "LAPTOP-R101UCM0\\madhangi"
+    ],
+    "services": {}
+}

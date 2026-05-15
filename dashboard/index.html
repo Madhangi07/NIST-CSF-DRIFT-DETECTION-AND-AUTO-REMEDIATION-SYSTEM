@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drift Detection & Remediation Dashboard</title>
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: #1a2332;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
+            --accent-orange: #f97316;
+            --border-color: #2d3748;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 20px 0;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            font-size: 2rem;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-card);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .card-icon {
+            font-size: 1.5rem;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .severity-breakdown {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .severity-item {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .severity-item.critical {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--accent-red);
+        }
+
+        .severity-item.high {
+            background: rgba(249, 115, 22, 0.1);
+            border: 1px solid var(--accent-orange);
+        }
+
+        .severity-item.medium {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid var(--accent-yellow);
+        }
+
+        .severity-count {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .severity-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .pipeline-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+        }
+
+        .pipeline-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pipeline-flow {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .pipeline-step {
+            flex: 1;
+            min-width: 180px;
+            text-align: center;
+            position: relative;
+        }
+
+        .step-box {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            height: 100%;
+            transition: all 0.3s;
+        }
+
+        .step-box.active {
+            border-color: var(--accent-blue);
+            background: rgba(59, 130, 246, 0.05);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+        }
+
+        .step-box.success {
+            border-color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .step-box.error {
+            border-color: var(--accent-red);
+            background: rgba(239, 68, 68, 0.05);
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-weight: 700;
+            transition: all 0.3s;
+        }
+
+        .step-box.success .step-number {
+            background: var(--accent-green);
+        }
+
+        .step-box.error .step-number {
+            background: var(--accent-red);
+        }
+
+        .step-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .step-description {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .pipeline-arrow {
+            font-size: 2rem;
+            color: var(--text-secondary);
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .control-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+
+        .control-card:hover {
+            border-color: var(--accent-blue);
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .control-name {
+            font-weight: 600;
+        }
+
+        .control-status {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .status-indicator.compliant {
+            background: var(--accent-green);
+        }
+
+        .status-indicator.drifted {
+            background: var(--accent-red);
+            animation: pulse 2s infinite;
+        }
+
+        .diff-view {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        .diff-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .diff-item:last-child {
+            border-bottom: none;
+        }
+
+        .diff-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .diff-expected {
+            color: var(--accent-green);
+        }
+
+        .diff-current {
+            color: var(--accent-red);
+        }
+
+        .button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button-primary {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .button-primary:hover {
+            background: #2563eb;
+        }
+
+        .button-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .button-danger {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        .button-success {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .tab.active {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .tab:hover:not(.active) {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border-color);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+            padding-left: 20px;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: -23px;
+            top: 5px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            border: 3px solid var(--bg-card);
+            box-shadow: 0 0 0 2px var(--border-color);
+        }
+
+        .timeline-dot.success {
+            background: var(--accent-green);
+        }
+
+        .timeline-dot.error {
+            background: var(--accent-red);
+        }
+
+        .timeline-time {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+
+        .timeline-content {
+            background: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .log-container {
+            background: #0a0a0a;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+
+        .log-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .log-container::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        .log-container::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .log-entry {
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(45, 55, 72, 0.3);
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+
+        .log-time {
+            color: var(--text-secondary);
+            min-width: 90px;
+            font-size: 0.8rem;
+        }
+
+        .log-level {
+            min-width: 70px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .log-level.info {
+            color: var(--accent-blue);
+        }
+
+        .log-level.success {
+            color: var(--accent-green);
+        }
+
+        .log-level.error {
+            color: var(--accent-red);
+        }
+
+        .log-level.warning {
+            color: var(--accent-yellow);
+        }
+
+        .log-message {
+            flex: 1;
+        }
+
+        .severity-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .severity-badge.critical {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--accent-red);
+        }
+
+        .severity-badge.high {
+            background: rgba(249, 115, 22, 0.2);
+            color: var(--accent-orange);
+        }
+
+        .severity-badge.medium {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--accent-yellow);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            padding: 15px 20px;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            font-weight: 500;
+            animation: slideIn 0.3s ease-out;
+            min-width: 300px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.success {
+            background: var(--accent-green);
+        }
+
+        .toast.error {
+            background: var(--accent-red);
+        }
+
+        .toast.info {
+            background: var(--accent-blue);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--accent-blue);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .pipeline-flow {
+                flex-direction: column;
+            }
+            
+            .pipeline-arrow {
+                transform: rotate(90deg);
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .diff-item {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                
+                <h1>NIST CSF DRIFT DETECTION AND AUTO-REMEDIATION SYSTEM</h1>
+            </div>
+            <div class="system-status">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">System Active</span>
+            </div>
+            <div class="action-buttons">
+                <button class="button button-primary" onclick="runDetection()">
+                    Run Detection
+                </button>
+                <button class="button button-secondary" onclick="location.reload()">
+                    Refresh
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="container">
+        <!-- Stats Grid -->
+        <div class="dashboard-grid" id="statsGrid">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Total Drifts</span>
+                    <span class="card-icon"></span>
+                </div>
+                <div class="stat-value" id="totalDrifts">0</div>
+                <div class="stat-label">Active configuration drifts</div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Severity Breakdown</span>
+                    <span class="card-icon"></span>
+                </div>
+                <div class="severity-breakdown" id="severityBreakdown">
+                    <div class="severity-item critical">
+                        <div class="severity-count" id="criticalCount">0</div>
+                        <div class="severity-text">CRITICAL</div>
+                    </div>
+                    <div class="severity-item high">
+                        <div class="severity-count" id="highCount">0</div>
+                        <div class="severity-text">HIGH</div>
+                    </div>
+                    <div class="severity-item medium">
+                        <div class="severity-count" id="mediumCount">0</div>
+                        <div class="severity-text">MEDIUM</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Systems Monitored</span>
+                    <span class="card-icon"></span>
+                </div>
+                <div class="stat-value" id="totalSystems">1</div>
+                <div class="stat-label">Active systems</div>
+            </div>
+        </div>
+
+        <div class="pipeline-container">
+            <div class="pipeline-title">
+                <span></span>
+                <span>Remediation Pipeline</span>
+            </div>
+            <div class="pipeline-flow">
+                <div class="pipeline-step">
+                    <div class="step-box" id="step1">
+                        <div class="step-number">1</div>
+                        <div class="step-title">Detection</div>
+                        <div class="step-description">Scan system configurations against baselines</div>
+                    </div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">
+                    <div class="step-box" id="step2">
+                        <div class="step-number">2</div>
+                        <div class="step-title">Snapshot</div>
+                        <div class="step-description">Capture pre-remediation system state</div>
+                    </div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">
+                    <div class="step-box" id="step3">
+                        <div class="step-number">3</div>
+                        <div class="step-title">Remediation</div>
+                        <div class="step-description">Apply fixes based on drift type</div>
+                    </div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">
+                    <div class="step-box" id="step4">
+                        <div class="step-number">4</div>
+                        <div class="step-title">Rollback</div>
+                        <div class="step-description">Restore if verification fails</div>
+                    </div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">
+                    <div class="step-box" id="step5">
+                        <div class="step-number">5</div>
+                        <div class="step-title">Evidence</div>
+                        <div class="step-description">Collect and store audit data</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('controls')">Control Status</button>
+            <button class="tab" onclick="showTab('timeline')">Activity Timeline</button>
+            <button class="tab" onclick="showTab('logs')">System Logs</button>
+        </div>
+
+        <div id="controlsTab">
+            <div class="controls-grid" id="controlsGrid">
+            </div>
+        </div>
+
+        <div id="timelineTab" style="display: none;">
+            <div class="timeline" id="timelineContent">
+                <div class="empty-state">
+                    <div class="empty-state-icon"></div>
+                    <p>No activities yet. Run a detection or remediation to see the timeline.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="logsTab" style="display: none;">
+            <div class="log-container" id="logContainer">
+                <div class="log-entry">
+                    <span class="log-time">--:--:--</span>
+                    <span class="log-level info">INFO</span>
+                    <span class="log-message">System initialized. Waiting for activities...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:8000';
+        
+        const MOCK_CONTROLS = [
+            {
+                name: 'Password Policy',
+                icon: ' ',
+                baseline: { min_length: 12, complexity: true, max_age_days: 90 },
+                current: { min_length: 6, complexity: true, max_age_days: 90 },
+                status: 'drifted',
+                severity: 'HIGH',
+                nist: 'PR.AC-1',
+                description: 'Password length and complexity requirements'
+            },
+            {
+                name: 'Windows Firewall',
+                icon: ' ',
+                baseline: { Domain: true, Private: true, Public: true },
+                current: { Domain: true, Private: false, Public: true },
+                status: 'drifted',
+                severity: 'HIGH',
+                nist: 'PR.AC-3',
+                description: 'Firewall profile status across all networks'
+            },
+            {
+                name: 'Admin Users',
+                icon: ' ',
+                baseline: ['BUILTIN\\Administrator'],
+                current: ['BUILTIN\\Administrator', 'DOMAIN\\User1'],
+                status: 'drifted',
+                severity: 'CRITICAL',
+                nist: 'PR.AC-1',
+                description: 'Unauthorized administrator accounts'
+            },
+            {
+                name: 'Critical Services',
+                icon: ' ',
+                baseline: { WinDefend: true, EventLog: true },
+                current: { WinDefend: false, EventLog: true },
+                status: 'drifted',
+                severity: 'CRITICAL',
+                nist: 'PR.PT-3',
+                description: 'Windows Defender and Event Log status'
+            }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshDashboard();
+            populateControls();
+            setInterval(refreshDashboard, 10000);
+        });
+
+        async function callAPI(endpoint, method = 'POST') {
+            try {
+                const res = await fetch(`${API_BASE}/${endpoint}`, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                
+                return await res.json();
+            } catch (err) {
+                console.warn(`API call failed: ${endpoint}`, err.message);
+                throw err;
+            }
+        }
+
+        async function runDetection() {
+            resetPipelineSteps();
+            showNotification('Running detection...', 'info');
+            setSystemStatus('warning', 'Detection running...');
+
+            try {
+                activateStep(1, 'active');
+                addLogEntry('info', 'Starting configuration scan...');
+                addTimelineEntry('Detection Started', 'Scanning system configurations against baselines', 'active');
+
+                const result = await callAPI('detect');
+                console.log('Detection result:', result);
+
+                activateStep(1, 'success');
+                addLogEntry('success', 'Detection scan completed successfully');
+                addTimelineEntry('Detection Complete', 'Drift analysis finished', 'success');
+
+                showNotification('Detection completed!', 'success');
+                setSystemStatus('success', 'System Active');
+
+            } catch (err) {
+                activateStep(1, 'error');
+                addLogEntry('error', `Detection failed: ${err.message}`);
+                addTimelineEntry('Detection Failed', err.message, 'error');
+                showNotification('Detection failed - check backend', 'error');
+                setSystemStatus('error', 'System Error');
+            }
+
+            await refreshDashboard();
+        }
+
+        async function simulateRemediation(controlName, severity) {
+            resetPipelineSteps();
+            addLogEntry('info', `Starting remediation for: ${controlName} (${severity})`);
+            addTimelineEntry('Remediation Start', `${controlName} - ${severity} severity`, 'active');
+
+            if (severity === 'CRITICAL') {
+                addLogEntry('warning', `CRITICAL severity - proceeding with caution`);
+            }
+
+            try {
+                activateStep(1, 'success');
+                await sleep(500);
+
+                activateStep(2, 'active');
+                addLogEntry('info', 'Taking system snapshot for rollback safety...');
+                addTimelineEntry('Snapshot', 'Capturing pre-remediation state', 'active');
+                await sleep(1000);
+                activateStep(2, 'success');
+                addLogEntry('success', 'Snapshot saved successfully');
+
+                activateStep(3, 'active');
+                addLogEntry('warning', `Applying fixes for ${controlName}...`);
+                addTimelineEntry('Remediation Started', `Applying configuration changes for ${controlName}`, 'active');
+
+                const result = await callAPI('remediate');
+                console.log('Remediation result:', result);
+
+                await sleep(1500);
+                activateStep(3, 'success');
+                addLogEntry('success', `Fixes applied for ${controlName}`);
+                activateStep(4, 'success');
+                activateStep(5, 'success');
+                addLogEntry('success', 'Evidence collected and stored');
+                addTimelineEntry('Remediation Complete', `${controlName} fixed successfully`, 'success');
+
+                showNotification(`${controlName} remediation successful!`, 'success');
+
+            } catch (err) {
+                activateStep(3, 'error');
+                addLogEntry('error', `Fix failed: ${err.message}`);
+                addTimelineEntry('Fix Failed', err.message, 'error');
+
+                activateStep(4, 'active');
+                addLogEntry('warning', '↩ Initiating rollback...');
+                addTimelineEntry('Rollback Started', 'Restoring from snapshot', 'error');
+                await sleep(1000);
+                activateStep(4, 'success');
+                addLogEntry('success', 'Rollback complete - system restored');
+                addTimelineEntry('Rollback Complete', 'System restored to pre-remediation state', 'success');
+
+                showNotification(`Remediation failed - System restored`, 'error');
+            }
+
+            await refreshDashboard();
+        }
+
+        async function simulateRollback(controlName) {
+            resetPipelineSteps();
+            
+            addLogEntry('warning', `↩ Manual rollback triggered for ${controlName}`);
+            addTimelineEntry('Rollback Initiated', `Manual rollback for ${controlName}`, 'active');
+
+            try {
+                activateStep(4, 'active');
+                await sleep(1000);
+                activateStep(4, 'success');
+                
+                addLogEntry('success', 'Rollback completed - configuration restored');
+                addTimelineEntry('Rollback Complete', 'System restored to baseline', 'success');
+                showNotification(`↩ ${controlName} rollback successful`, 'success');
+            } catch (err) {
+                activateStep(4, 'error');
+                addLogEntry('error', `Rollback failed: ${err.message}`);
+                showNotification('Rollback failed', 'error');
+            }
+        }
+
+        async function refreshDashboard() {
+            try {
+                const res = await fetch(`${API_BASE}/dashboard`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                
+                const data = await res.json();
+                
+                document.getElementById('totalDrifts').textContent = data.active_drifts || 0;
+                document.getElementById('criticalCount').textContent = data.severity?.critical || 0;
+                document.getElementById('highCount').textContent = data.severity?.high || 0;
+                document.getElementById('mediumCount').textContent = data.severity?.medium || 0;
+                document.getElementById('totalSystems').textContent = data.total_systems || 1;
+                
+                setSystemStatus('success', 'System Active');
+            } catch (err) {
+                console.log('Dashboard API unavailable, using defaults');
+                setSystemStatus('warning', 'API Offline');
+            }
+        }
+
+        function setSystemStatus(type, text) {
+            const dot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            
+            dot.style.background = type === 'success' ? 'var(--accent-green)' :
+                                   type === 'warning' ? 'var(--accent-yellow)' :
+                                   'var(--accent-red)';
+            statusText.textContent = text;
+        }
+
+        function activateStep(stepNumber, type) {
+            const step = document.getElementById(`step${stepNumber}`);
+            if (step) {
+                step.className = `step-box ${type}`;
+            }
+        }
+
+        function resetPipelineSteps() {
+            for (let i = 1; i <= 5; i++) {
+                const step = document.getElementById(`step${i}`);
+                if (step) {
+                    step.className = 'step-box';
+                }
+            }
+        }
+
+        function addLogEntry(level, message) {
+            const logContainer = document.getElementById('logContainer');
+            const time = new Date().toLocaleTimeString();
+            
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `
+                <span class="log-time">${time}</span>
+                <span class="log-level ${level}">[${level.toUpperCase()}]</span>
+                <span class="log-message">${message}</span>
+            `;
+            
+            logContainer.insertBefore(entry, logContainer.firstChild);
+            
+            while (logContainer.children.length > 100) {
+                logContainer.removeChild(logContainer.lastChild);
+            }
+        }
+
+        function addTimelineEntry(title, description, status) {
+            const timeline = document.getElementById('timelineContent');
+            
+            const emptyState = timeline.querySelector('.empty-state');
+            if (emptyState) emptyState.remove();
+            
+            const entry = document.createElement('div');
+            entry.className = 'timeline-item';
+            entry.innerHTML = `
+                <div class="timeline-dot ${status}"></div>
+                <div class="timeline-time">${new Date().toLocaleTimeString()}</div>
+                <div class="timeline-content">
+                    <strong>${title}</strong>
+                    <p style="margin-top: 5px; color: var(--text-secondary);">${description}</p>
+                </div>
+            `;
+            
+            timeline.insertBefore(entry, timeline.firstChild);
+        }
+
+        function showNotification(message, type) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        function showTab(tabName) {
+            document.getElementById('controlsTab').style.display = tabName === 'controls' ? 'block' : 'none';
+            document.getElementById('timelineTab').style.display = tabName === 'timeline' ? 'block' : 'none';
+            document.getElementById('logsTab').style.display = tabName === 'logs' ? 'block' : 'none';
+            
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.textContent.toLowerCase().includes(tabName)) {
+                    tab.classList.add('active');
+                }
+            });
+        }
+
+        function sleep(ms) {
+            return new Promise(r => setTimeout(r, ms));
+        }
+
+        function populateControls() {
+            const controlsGrid = document.getElementById('controlsGrid');
+            controlsGrid.innerHTML = '';
+
+            MOCK_CONTROLS.forEach(control => {
+                const card = document.createElement('div');
+                card.className = 'control-card';
+                
+                const controlId = control.name.replace(/\s+/g, '');
+                
+                card.innerHTML = `
+                    <div class="control-header">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 1.5rem;">${control.icon}</span>
+                            <div>
+                                <div class="control-name">${control.name}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">NIST: ${control.nist}</div>
+                            </div>
+                        </div>
+                        <div class="control-status">
+                            <span class="severity-badge ${control.severity.toLowerCase()}">${control.severity}</span>
+                            <span class="status-indicator ${control.status}" title="${control.status === 'drifted' ? 'Drift Detected' : 'Compliant'}"></span>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 10px;">
+                        ${control.description}
+                    </div>
+                    <div class="diff-view" id="diff-${controlId}"></div>
+                    <div class="action-buttons">
+                        <button class="button button-primary" onclick="simulateRemediation('${control.name}', '${control.severity}')">
+                            Remediate
+                        </button>
+                        <button class="button button-secondary" onclick="simulateRollback('${control.name}')">
+                            ↩ Rollback
+                        </button>
+                    </div>
+                `;
+                
+                controlsGrid.appendChild(card);
+                
+                const diffContainer = document.getElementById(`diff-${controlId}`);
+                if (diffContainer) {
+                    displayDiff(diffContainer, control.baseline, control.current);
+                }
+            });
+        }
+
+        function displayDiff(container, baseline, current) {
+            let html = '';
+            
+            if (typeof baseline === 'object' && !Array.isArray(baseline)) {
+                Object.keys(baseline).forEach(key => {
+                    const expected = baseline[key];
+                    const actual = current[key];
+                    const isDrifted = expected !== actual;
+                    
+                    const formatValue = (val) => {
+                        if (typeof val === 'boolean') return val ? 'Enabled' : 'Disabled';
+                        if (typeof val === 'number' && key.includes('length')) return `${val} characters`;
+                        if (typeof val === 'number' && key.includes('age')) return `${val} days`;
+                        return val;
+                    };
+                    
+                    html += `
+                        <div class="diff-item">
+                            <span class="diff-label">${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</span>
+                            <div>
+                                <span class="diff-expected">Expected: ${formatValue(expected)}</span>
+                                <span style="margin: 0 5px; color: var(--text-secondary);">|</span>
+                                <span style="color: ${isDrifted ? 'var(--accent-red)' : 'var(--accent-green)'};">
+                                    Current: ${formatValue(actual)}
+                                    ${isDrifted ? '?' : ' ✓'}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else if (Array.isArray(baseline)) {
+                const unauthorized = current.filter(u => !baseline.includes(u));
+                html += `
+                    <div class="diff-item">
+                        <span class="diff-label">Authorized Users:</span>
+                        <span class="diff-expected">${baseline.join(', ')}</span>
+                    </div>
+                `;
+                if (unauthorized.length > 0) {
+                    html += `
+                        <div class="diff-item">
+                            <span class="diff-label">Unauthorized Users:</span>
+                            <span style="color: var(--accent-red);">${unauthorized.join(', ')}</span>
+                        </div>
+                    `;
+                }
+            }
+            
+            container.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

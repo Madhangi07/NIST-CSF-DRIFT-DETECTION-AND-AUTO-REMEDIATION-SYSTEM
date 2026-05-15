@@ -1,0 +1,18 @@
+{
+    "timestamp": {
+        "before": "20260430_110317",
+        "after": null
+    },
+    "firewall": {
+        "before": {
+            "Domain": false,
+            "Private": false,
+            "Public": false
+        },
+        "after": {
+            "Domain": true,
+            "Private": true,
+            "Public": true
+        }
+    }
+}
